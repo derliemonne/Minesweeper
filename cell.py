@@ -10,33 +10,55 @@ class Cell(GameObject):
     """
     def __init__(self, game_state: GameState):
         GameObject.__init__(self, game_state)
-        self.is_opened = False
-        self.is_mined = False
-        self.is_flagged = False
-        self.mined_neighbors_count = 0
+        self._is_opened = False
+        self._is_mined = False
+        self._is_flagged = False
+        self._mined_neighbors_count = 0
 
         _sheet = sprites.TileSheets(sprites.TileSheets.two_thousand)
         _builder = sprites.TileBuilder(_sheet)
         self._tile = _builder.build()
 
+    @property
+    def is_opened(self):
+        return self._is_opened
+
     def open(self):
-        self.is_opened = True
+        self._is_opened = True
+
+    @property
+    def is_mined(self):
+        return self._is_mined
+
+    @is_mined.setter
+    def is_mined(self, value: bool):
+        self._is_mined = value
+
+    @property
+    def is_flagged(self):
+        return self._is_flagged
+
+    @property
+    def mined_neighbors_count(self):
+        return self._mined_neighbors_count
+
+    @mined_neighbors_count.setter
+    def mined_neighbors_count(self, value):
+        self._mined_neighbors_count = value
 
     def change_flag(self):
-        self.is_flagged = not self.is_flagged
+        self._is_flagged = not self._is_flagged
 
     def get_sprite(self):
         """
-        :return: sprite that can be blitted on a surface
+        :return: sprite that can be blit on a surface
         """
-        if not self.is_opened:
-            return self._tile.flag if self.is_flagged else self._tile.unopened
+        if not self._is_opened:
+            return self._tile.flag if self._is_flagged else self._tile.unopened
         else:
-            if self.is_mined:
+            if self._is_mined:
                 if self.game_state.is_game_win:
                     return self._tile.mine_red_cross
                 return self._tile.mine_red if self.game_state.is_game_over else self._tile.mine
             else:
-                return self._tile[str(self.mined_neighbors_count)]  # a digit 0-8
-
-
+                return self._tile[self._mined_neighbors_count]  # a digit 0-8

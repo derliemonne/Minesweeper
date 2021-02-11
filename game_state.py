@@ -7,4 +7,3 @@ class GameState:
         self.is_game_win = False
         # player has just started a game
         self.is_first_move = True
-

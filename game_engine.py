@@ -9,17 +9,17 @@ class GameEngine:
     This class stores, draws and updates game objects
     """
     def __init__(self):
-        self.screen_size = (500, 400)
-        self.screen = pg.display.set_mode(self.screen_size)
-        self.clock = pg.time.Clock()
-        self.fps = 60
-        self.game_state = GameState()
-        self.field = Field(self.screen_size, game_state=self.game_state)
-        self.mouse_event_handlers = []
-        self.key_event_handlers = []
+        self._SCREEN_SIZE = (500, 400)
+        self._FPS = 60
+        self._screen = pg.display.set_mode(self._SCREEN_SIZE)
+        self._clock = pg.time.Clock()
+        self._game_state = GameState()
+        self._field = Field(self._SCREEN_SIZE, game_state=self._game_state)
+        self._mouse_event_handlers = []
+        self._key_event_handlers = []
 
-        self.key_event_handlers.append(self.handle_exit)
-        self.mouse_event_handlers.append(self.field.handle_mouse_event)
+        self._key_event_handlers.append(self.handle_exit)
+        self._mouse_event_handlers.append(self._field.handle_mouse_event)
 
     def run(self):
         while 'ok':
@@ -32,10 +32,10 @@ class GameEngine:
             if event.type == pg.QUIT:
                 self.exit()
             elif event.type == pg.KEYDOWN:
-                for handler in self.key_event_handlers:
+                for handler in self._key_event_handlers:
                     handler(event.key)
             elif event.type == pg.MOUSEBUTTONDOWN:
-                for handler in self.mouse_event_handlers:
+                for handler in self._mouse_event_handlers:
                     handler(event.pos, event.button)
 
     def handle_exit(self, key):
@@ -44,13 +44,13 @@ class GameEngine:
 
     def update(self):
         # stable fps
-        self.clock.tick(self.fps)
+        self._clock.tick(self._FPS)
         pg.display.update()
 
     def draw(self):
-        self.field.draw(self.screen)
+        self._field.draw(self._screen)
 
     @staticmethod
-    def exit(self):
+    def exit():
         pg.quit()
         sys.exit()

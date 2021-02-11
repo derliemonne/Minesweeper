@@ -1,7 +1,6 @@
 from game_object import GameObject
 from game_state import GameState
 import pygame as pg
-from pygame import Vector2 as Vector
 from cell import Cell
 import numpy as np
 from random import randint
@@ -14,13 +13,13 @@ class Field(GameObject):
     """
     def __init__(self, screen_size: tuple, game_state: GameState):
         GameObject.__init__(self, game_state)
-        self.field_size = (10, 8)
-        width, height = self.field_size
-        self.cells = np.array([[Cell(game_state=self.game_state)
-                               for _y in range(height)]
-                               for _x in range(width)])
-        self.mines_count = 10
-        self.cell_size = min([screen_size[i] // self.field_size[i] for i in range(2)])
+        self._field_size = (10, 8)
+        width, height = self._field_size
+        self._cells = np.array([[Cell(game_state=self.game_state)
+                                 for _y in range(height)]
+                                for _x in range(width)])
+        self._mines_count = 10
+        self._cell_size = min([screen_size[i] // self._field_size[i] for i in range(2)])
         self._mine_vectors = None
 
     def generate(self, clicked_cell_vector):
@@ -31,10 +30,10 @@ class Field(GameObject):
         :param clicked_cell_vector: coordinates of the cell player clicked
         :return:
         """
-        width, height = self.field_size
+        width, height = self._field_size
         self._mine_vectors = []
         # 1) generating random coordinates to place mine
-        while len(self._mine_vectors) < self.mines_count:
+        while len(self._mine_vectors) < self._mines_count:
             random_vector = (randint(0, width - 1), randint(0, height - 1))
             if (random_vector not in self._mine_vectors and
                     random_vector != clicked_cell_vector and
@@ -42,9 +41,9 @@ class Field(GameObject):
                 self._mine_vectors.append(random_vector)
         # 2) setting mines
         for vector in self._mine_vectors:
-            self.cells[vector].is_mined = True
+            self._cells[vector].is_mined = True
             for coordinates in self.get_neighbor_vectors(vector):
-                self.cells[coordinates].mined_neighbors_count += 1
+                self._cells[coordinates].mined_neighbors_count += 1
 
     def get_neighbor_vectors(self, vector):
         """
@@ -52,7 +51,7 @@ class Field(GameObject):
         :return: a list of (x, y) coordinates of neighbors
         """
         neighbors_vectors = []
-        width, height = self.field_size
+        width, height = self._field_size
         x, y = tuple(vector)
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
@@ -71,9 +70,9 @@ class Field(GameObject):
         :return:
         """
         # already opened cells can't be changed
-        if self.cells[vector].is_opened:
+        if self._cells[vector].is_opened:
             return
-        if self.cells[vector].is_mined:
+        if self._cells[vector].is_mined:
             self.blow_up()
             return
         # on the first move the field had not been generated yet
@@ -81,8 +80,8 @@ class Field(GameObject):
             self.generate(vector)
             self.game_state.is_first_move = False
 
-        self.cells[vector].open()
-        if self.cells[vector].mined_neighbors_count == 0:
+        self._cells[vector].open()
+        if self._cells[vector].mined_neighbors_count == 0:
             for neighbor_vector in self.get_neighbor_vectors(vector):
                 # recursive exposing
                 self.expose_cell(neighbor_vector)
@@ -90,35 +89,40 @@ class Field(GameObject):
         self.check_game_win()
 
     def check_game_win(self):
-        opened_cells_count = len([1 for row in self.cells for cell in row if cell.is_opened])
-        left_cells_count = (self.field_size[0] * self.field_size[1]) - opened_cells_count
-        if left_cells_count == self.mines_count:
+        opened_cells_count = len([1 for row in self._cells for cell in row if cell.is_opened])
+        left_cells_count = (self._field_size[0] * self._field_size[1]) - opened_cells_count
+        if left_cells_count == self._mines_count:
             self.game_state.is_game_win = True
             for vector in self._mine_vectors:
                 # just open mined cells to show player the win
-                self.cells[vector].open()
+                self(vector).open()
 
     def blow_up(self):
         self.game_state.is_game_over = True
         for vector in self._mine_vectors:
-            self.cells[vector].open()
+            self(vector).open()
 
     def draw(self, screen: pg.Surface):
-        for x, row in enumerate(self.cells):
+        for x, row in enumerate(self._cells):
             for y, cell in enumerate(row):
-                sprite = pg.transform.scale(cell.get_sprite(), (self.cell_size, self.cell_size))
-                screen.blit(sprite, (x * self.cell_size, y * self.cell_size))
-
-    def set_flag(self, vector: Vector):
-        self.cells[vector].change_flag()
+                sprite = pg.transform.scale(cell.get_sprite(), (self._cell_size, self._cell_size))
+                screen.blit(sprite, (x * self._cell_size, y * self._cell_size))
 
     def handle_mouse_event(self, pos, button):
         if self.game_state.is_game_over:
             # player can do nothing
             return
-        vector = tuple(x // self.cell_size for x in pos)
+        vector = tuple(x // self._cell_size for x in pos)
         if button == pg.BUTTON_LEFT:
             self.expose_cell(vector)
         elif button == pg.BUTTON_RIGHT:
-            self.set_flag(vector)
+            self(vector).change_flag()
 
+    def __call__(self, *args, **kwargs):
+        """
+        syntactic sugar to index field's cells
+        :param args: a vector (x, y) of cell
+        :param kwargs:
+        :return: the cell placed in the vector
+        """
+        return self._cells[args[0]]
