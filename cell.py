@@ -53,12 +53,10 @@ class Cell(GameObject):
         """
         :return: sprite that can be blit on a surface
         """
-        if not self._is_opened:
-            return self._tile.flag if self._is_flagged else self._tile.unopened
-        else:
+        if self._is_opened:
             if self._is_mined:
-                if self.game_state.is_game_win:
-                    return self._tile.mine_red_cross
-                return self._tile.mine_red if self.game_state.is_game_over else self._tile.mine
+                return self._tile.mine_red_cross if self.game_state.is_game_win else self._tile.mine_red
             else:
                 return self._tile[self._mined_neighbors_count]  # a digit 0-8
+        else:
+            return self._tile.flag if self._is_flagged else self._tile.unopened
