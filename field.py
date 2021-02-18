@@ -10,17 +10,18 @@ class Field(GameObject):
     It holds cells
     Updates and draws them depending on game state and events (mouseclick)
     """
-    def __init__(self, screen_size: tuple, game_state: GameState):
+    def __init__(self, surface_size: tuple, offset: tuple, game_state: GameState):
         GameObject.__init__(self, game_state)
         self._field_size = (10, 8)
         self._width, self._height = self._field_size
+        self._offset = offset
         # 2D array of cells
         self._cells = [[Cell(game_state=self.game_state)
                        for _y in range(self._height)]
                        for _x in range(self._width)]
-        self._mines_count = 10
-        self._cell_size = min([screen_size[i] // self._field_size[i] for i in range(2)])
+        self._cell_size = min([surface_size[i] // self._field_size[i] for i in range(2)])
         self._mine_vectors = None
+        self._surface = pg.Surface(surface_size)
 
     def cell(self, vector):
         """
@@ -42,7 +43,7 @@ class Field(GameObject):
         self._mine_vectors = []
         # 1) generating random coordinates to place mine
         # and appending them into the self._mine_vectors
-        while len(self._mine_vectors) < self._mines_count:
+        while len(self._mine_vectors) < self.game_state.mines_count:
             random_vector = (rnd.randint(0, self._width - 1),
                              rnd.randint(0, self._height - 1))
             neighbors = self.get_neighbor_vectors(clicked_cell_vector)
@@ -101,7 +102,7 @@ class Field(GameObject):
     def check_game_win(self):
         opened_cells_count = len([1 for row in self._cells for cell in row if cell.is_opened])
         left_cells_count = (self._field_size[0] * self._field_size[1]) - opened_cells_count
-        if left_cells_count == self._mines_count:
+        if left_cells_count == self.game_state.mines_count:
             self.game_state.is_game_win = True
             for vector in self._mine_vectors:
                 # just open mined cells to show player the win
@@ -112,16 +113,24 @@ class Field(GameObject):
         for vector in self._mine_vectors:
             self.cell(vector).open()
 
-    def draw(self, screen: pg.Surface):
+    def get_draw(self):
         for x, row in enumerate(self._cells):
             for y, cell in enumerate(row):
                 sprite = pg.transform.scale(cell.get_sprite(), (self._cell_size, self._cell_size))
-                screen.blit(sprite, (x * self._cell_size, y * self._cell_size))
+                self._surface.blit(sprite, (x * self._cell_size, y * self._cell_size))
+        return self._surface
 
-    def handle_mouse_event(self, pos, button):
+    def handle_mouse_event(self, abs_pos, button):
+        pos = [abs_pos[x] - self._offset[x] for x in range(2)]
+
+        # user clicked outside field
+        if pos[0] < 0 or pos[1] < 0:
+            return
+
         if self.game_state.is_game_over:
             # player can do nothing
             return
+
         vector = tuple(x // self._cell_size for x in pos)
         if button == pg.BUTTON_LEFT:
             self.expose_cell(vector)
