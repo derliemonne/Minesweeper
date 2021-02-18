@@ -25,6 +25,8 @@ class Cell(GameObject):
 
     def open(self):
         self._is_opened = True
+        if self._is_flagged:
+            self.change_flag()
 
     @property
     def is_mined(self):
@@ -47,7 +49,13 @@ class Cell(GameObject):
         self._mined_neighbors_count = value
 
     def change_flag(self):
-        self._is_flagged = not self._is_flagged
+        if self._is_flagged:
+            self._is_flagged = False
+            self.game_state.flags_count -= 1
+        # user can set flags only on top of closed cells
+        elif not self.is_opened:
+            self._is_flagged = True
+            self.game_state.flags_count += 1
 
     def get_sprite(self):
         """
